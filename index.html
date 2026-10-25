@@ -569,7 +569,7 @@ function render(dt){
   ctx.fillStyle='#0b0a14';ctx.fillRect(0,0,W,H);
   const base=Math.min(W,H)/700;
   if(S.mode==='menu'){
-    S.demo+=dt*55;const i=Math.floor(S.demo)%N;
+    S.demo+=dt*55;const i=((Math.floor(S.demo)%N)+N)%N;
     camx+=(pts[i][0]-camx)*Math.min(1,dt*3);camy+=(pts[i][1]-camy)*Math.min(1,dt*3);camS=base*.8;
   }else{
     const c=S.car,k=Math.min(1,Math.hypot(c.vx,c.vy)/430);
@@ -646,7 +646,7 @@ bind('bL','left');bind('bR','right');bind('bG','gas');bind('bB','brake');
 /* ================= bucle ================= */
 let last=performance.now();
 function frame(t){
-  const dt=Math.min(.05,(t-last)/1000||.016);last=t;
+  const dt=Math.max(0,Math.min(.05,(t-last)/1000||.016));last=t;
   if(S.mode==='play') update(dt);
   render(dt);
   requestAnimationFrame(frame);
