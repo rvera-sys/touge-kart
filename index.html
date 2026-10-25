@@ -89,11 +89,11 @@ summary{cursor:pointer;color:var(--muted);font-size:15px}
 #touch{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:space-between;align-items:flex-end;
   padding:12px calc(14px + env(safe-area-inset-right,0px)) calc(14px + env(safe-area-inset-bottom,0px)) calc(14px + env(safe-area-inset-left,0px));
   pointer-events:none}
-.grp{display:flex;gap:12px;pointer-events:auto}
-.tb{width:84px;height:84px;border-radius:50%;background:rgba(244,241,236,.14);border:2px solid rgba(244,241,236,.4);
-  font-size:30px;font-weight:700;touch-action:none;display:flex;align-items:center;justify-content:center;color:var(--paper)}
+.grp{display:flex;gap:14px;pointer-events:auto}
+.tb{width:100px;height:100px;border-radius:50%;background:rgba(244,241,236,.16);border:2px solid rgba(244,241,236,.45);
+  font-size:34px;font-weight:700;touch-action:none;display:flex;align-items:center;justify-content:center;color:var(--paper)}
 .tb.on{background:var(--pink);border-color:var(--paper);color:var(--ink)}
-.tb.wide{width:96px;height:96px;font-size:17px}
+.tb.wide{width:112px;height:112px;font-size:16px;line-height:1.05;padding:10px;text-align:center}
 </style>
 </head>
 <body>
@@ -258,6 +258,20 @@ const conns=new Map();      // anfitrión: id -> {conn}
 const players=new Map();    // anfitrión: id -> datos del jugador
 const slots=new Array(MAX_PLAYERS).fill(null); slots[0]='h';
 const clockSamples=[];
+/* --- diagnostico en pantalla (?debug=1) --- */
+const DBG_ON=/[?&]debug=1/.test(location.search);
+let dbgBox=null;
+function dbg(...a){
+  const line=new Date().toISOString().slice(11,23)+' '+a.join(' ');
+  try{ console.log('[tk] '+line); }catch(e){}
+  if(!DBG_ON) return;
+  if(!dbgBox){
+    dbgBox=document.createElement('pre');
+    dbgBox.style.cssText='position:fixed;left:8px;right:8px;bottom:8px;max-height:40vh;overflow:auto;z-index:9999;margin:0;padding:8px;background:rgba(0,0,0,.85);border:1px solid #28e7ff;border-radius:8px;font:11px/1.35 ui-monospace,monospace;color:#9ff;white-space:pre-wrap;pointer-events:none';
+    document.body.appendChild(dbgBox);
+  }
+  dbgBox.textContent=(dbgBox.textContent+'\n'+line).split('\n').slice(-14).join('\n');
+}
 
 function cleanupNet(){
   timers.forEach(clearInterval);timers=[];
@@ -277,15 +291,23 @@ function selfEntry(){
 function createRoom(){
   if(typeof Peer==='undefined'){say('No se pudo cargar el servicio de salas. Revisa tu conexión.');return;}
   S.name=cleanName($('nick').value.trim());store('tk_name',S.name);
-  say('Creando sala…');
+  say('Creando sala…');dbg('crear sala');
   let tries=0;
   const attempt=()=>{
     const pin=String(100000+rnd(900000));
     let p,opened=false;
     try{p=new Peer(PREFIX+pin,{debug:0});}catch(e){say('No se pudo crear la sala.');return;}
-    p.on('open',()=>{opened=true;peer=p;S.pin=pin;startHost();});
+    p.on('open',()=>{
+      opened=true;peer=p;S.pin=pin;dbg('anfitrión listo '+p.id);
+      p.on('disconnected',()=>{dbg('anfitrión desconectado');try{p.reconnect();}catch(e){}});
+      p.on('error',e=>{dbg('error anfitrión '+e.type);
+        if(e.type==='network'||e.type==='server-error'||e.type==='socket-error'||e.type==='socket-closed') setTimeout(()=>{try{p.reconnect();}catch(_){}},1500);
+      });
+      startHost();
+    });
     p.on('error',e=>{
-      if(opened){ return; }
+      dbg('crear: '+e.type);
+      if(opened) return;
       try{p.destroy();}catch(_){}
       if(e.type==='unavailable-id'&&tries++<5) attempt(); else say('No se pudo crear la sala. Intenta de nuevo.');
     });
@@ -298,12 +320,14 @@ function startHost(){
   S.host=true;S.practice=false;S.myId='h';S.slot=0;
   peer.on('connection',conn=>{
     let id=conn.peer;
+    dbg('llega '+id);
     conn.on('data',m=>onHostData(id,conn,m));
-    conn.on('close',()=>dropPlayer(id));
-    conn.on('error',()=>dropPlayer(id));
+    conn.on('open',()=>dbg('canal abierto '+id));
+    conn.on('close',()=>{dbg('cierra '+id);dropPlayer(id);});
+    conn.on('error',e=>{dbg('error canal '+id+' '+(e&&e.type));dropPlayer(id);});
   });
   timers.push(setInterval(hostBroadcast,50));
-  timers.push(setInterval(()=>{const t=Date.now();players.forEach((o,id)=>{if(t-o.seen>8000)dropPlayer(id);});},2000));
+  timers.push(setInterval(()=>{const t=Date.now();players.forEach((o,id)=>{if(t-o.seen>20000)dropPlayer(id);});},2000));
   enterUI();
 }
 function onHostData(id,conn,m){
@@ -338,30 +362,58 @@ function hostBroadcast(){
 /* --- invitado --- */
 function joinRoom(pin){
   if(typeof Peer==='undefined'){say('No se pudo cargar el servicio de salas. Revisa tu conexión.');return;}
-  say('Conectando…');
-  let done=false;
-  const fail=m=>{ if(done) return; done=true; clearTimeout(to); cleanupNet(); say(m); };
-  const to=setTimeout(()=>fail('No se encontró la sala. Revisa el PIN o pide que la abran.'),12000);
-  try{ peer=new Peer(undefined,{debug:0}); }catch(e){ fail('No se pudo conectar.'); return; }
-  peer.on('error',e=>{
-    if(done){ if(S.mode==='play') leave('Se perdió la conexión.'); return; }
-    fail(e.type==='peer-unavailable'?'PIN inválido: no hay una sala abierta con ese PIN.':'No se pudo conectar. Intenta de nuevo.');
-  });
-  peer.on('open',id=>{
-    const conn=peer.connect(PREFIX+pin,{reliable:true});
-    conn.on('open',()=>{
-      if(done) return; done=true; clearTimeout(to);
-      hostConn=conn;S.host=false;S.practice=false;S.myId=id;S.pin=pin;S.slot=0;
-      conn.send({t:'hello',n:S.name,c:S.color});
-      timers.push(setInterval(()=>{
-        const c=S.car;
-        try{conn.send({t:'s',x:Math.round(c.x),y:Math.round(c.y),a:+c.a.toFixed(2),l:S.lap,p:S.prog,f:S.fin?1:0,t:+S.ft.toFixed(2)});}catch(e){}
-      },50));
-      enterUI();
+  let attempt=0,done=false,to=null;
+  const MAX=3;
+  const stop=m=>{ if(done) return; done=true; clearTimeout(to); cleanupNet(); say(m); };
+  const retryOrFail=m=>{
+    if(done) return;
+    if(attempt<MAX){
+      say('Reintentando… ('+(attempt+1)+'/'+MAX+')');
+      setTimeout(()=>{ if(!done) tryOnce(); },1800);
+    } else stop(m);
+  };
+  const tryOnce=()=>{
+    attempt++;
+    if(attempt===1) say('Conectando…');
+    dbg('intento '+attempt);
+    let p;
+    try{ p=new Peer(undefined,{debug:0}); }catch(e){ retryOrFail('No se pudo conectar.'); return; }
+    let settled=false;
+    const settle=()=>{ if(settled) return false; settled=true; clearTimeout(to); return true; };
+    p.on('disconnected',()=>{dbg('invitado desconectado');try{p.reconnect();}catch(e){}});
+    p.on('error',e=>{
+      dbg('error invitado '+e.type);
+      if(settle()){ try{p.destroy();}catch(_){}
+        retryOrFail(e.type==='peer-unavailable'?'PIN inválido: no hay una sala abierta con ese PIN.':'No se pudo conectar. Intenta de nuevo.');
+        return;
+      }
+      if(done&&S.mode==='play') leave('Se perdió la conexión.');
     });
-    conn.on('data',onGuestData);
-    conn.on('close',()=>{ if(S.mode==='play') leave('La sala se cerró.'); else fail('No se pudo entrar a la sala.'); });
-  });
+    p.on('open',id=>{
+      dbg('invitado listo '+id);
+      const conn=p.connect(PREFIX+pin,{reliable:true});
+      conn.on('open',()=>{
+        if(!settle()) return;
+        done=true;dbg('canal abierto');
+        hostConn=conn;S.host=false;S.practice=false;S.myId=id;S.pin=pin;S.slot=0;
+        conn.send({t:'hello',n:S.name,c:S.color});
+        timers.push(setInterval(()=>{
+          const c=S.car;
+          try{conn.send({t:'s',x:Math.round(c.x),y:Math.round(c.y),a:+c.a.toFixed(2),l:S.lap,p:S.prog,f:S.fin?1:0,t:+S.ft.toFixed(2)});}catch(e){}
+        },50));
+        conn.on('close',()=>{ if(S.mode==='play') leave('La sala se cerró.'); else stop('No se pudo entrar a la sala.'); });
+        enterUI();
+      });
+      conn.on('data',onGuestData);
+    });
+    to=setTimeout(()=>{
+      if(!settle()) return;
+      dbg('sin respuesta');
+      try{p.destroy();}catch(e){}
+      retryOrFail('No se encontró la sala. Revisá el PIN o pedile al anfitrión que deje la pestaña abierta.');
+    },15000);
+  };
+  tryOnce();
 }
 function onGuestData(m){
   if(!m||typeof m!=='object') return;
@@ -652,7 +704,8 @@ function frame(t){
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
-addEventListener('pagehide',()=>{cleanupNet();});
+/* en celular, cambiar de app dispara pagehide: no cerramos la sala para no matarla */
+addEventListener('pagehide',e=>{ if(!e.persisted && !S.host && !hostConn) cleanupNet(); });
 })();
 </script>
 </body>
