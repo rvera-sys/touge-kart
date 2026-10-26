@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="color-scheme" content="dark">
 <title>Touge Kart 峠</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -20,10 +20,10 @@
   padding-bottom:env(safe-area-inset-bottom,0px);
 }
 *,*::before,*::after{box-sizing:inherit}
-html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px);-webkit-text-size-adjust:100%;text-size-adjust:100%}
 body{margin:0;height:100%;background:var(--ink);color:var(--paper);font-family:var(--font);font-weight:500;overflow:hidden;
-  -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:none}
-canvas{position:fixed;inset:0;width:100%;height:100%;display:block}
+  -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:none;overscroll-behavior:none}
+canvas{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
 [hidden]{display:none!important}
 button,input{font:inherit;color:inherit}
 button{cursor:pointer;border:0}
@@ -31,7 +31,7 @@ button{cursor:pointer;border:0}
 
 #menu{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
   padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px));
-  background:radial-gradient(ellipse at 50% 30%,rgba(11,10,20,.55),rgba(11,10,20,.93));overflow-y:auto;touch-action:pan-y}
+  background:radial-gradient(ellipse at 50% 30%,rgba(11,10,20,.55),rgba(11,10,20,.93));overflow-y:auto;touch-action:manipulation}
 .card{width:min(420px,100%);margin:auto}
 .hero{position:relative;padding:8px 0 18px}
 .kanji{position:absolute;right:-6px;top:-34px;font-size:150px;line-height:1;font-weight:700;color:transparent;
@@ -94,6 +94,26 @@ summary{cursor:pointer;color:var(--muted);font-size:15px}
   font-size:34px;font-weight:700;touch-action:none;display:flex;align-items:center;justify-content:center;color:var(--paper)}
 .tb.on{background:var(--pink);border-color:var(--paper);color:var(--ink)}
 .tb.wide{width:112px;height:112px;font-size:16px;line-height:1.05;padding:10px;text-align:center}
+/* palanca analógica estilo DualShock */
+.stick{position:relative;flex:0 0 auto;width:112px;height:112px;border-radius:50%;pointer-events:auto;touch-action:none;
+  background:radial-gradient(circle at 50% 26%,#3b3b47,#1c1c23 60%,#101016 100%);
+  border:2px solid rgba(244,241,236,.20);
+  box-shadow:inset 0 2px 5px rgba(255,255,255,.15),inset 0 -4px 10px rgba(0,0,0,.75),0 8px 18px rgba(0,0,0,.55)}
+.stick::before{content:'';position:absolute;inset:9px;border-radius:50%;
+  background:radial-gradient(circle,rgba(0,0,0,.62),rgba(0,0,0,.2) 72%,rgba(255,255,255,.05) 100%);
+  box-shadow:inset 0 4px 8px rgba(0,0,0,.85),inset 0 -2px 6px rgba(255,255,255,.08)}
+.stick::after{content:'◀   ▶';position:absolute;left:0;right:0;bottom:6px;text-align:center;font-size:11px;
+  letter-spacing:2px;color:rgba(244,241,236,.32);pointer-events:none}
+.knob{position:absolute;left:50%;top:50%;width:58px;height:58px;margin:-29px 0 0 -29px;border-radius:50%;z-index:2;
+  background:radial-gradient(circle at 36% 28%,#8f8f9c,#4a4a57 52%,#23232b 83%,#17171d 100%);
+  box-shadow:0 4px 10px rgba(0,0,0,.7),inset 0 2px 3px rgba(255,255,255,.45),inset 0 -3px 6px rgba(0,0,0,.55)}
+.knob.snap{transition:transform .18s cubic-bezier(.2,1.6,.4,1)}
+.knob span{position:absolute;inset:6px;border-radius:50%;
+  background:repeating-conic-gradient(from 0deg at 50% 50%,rgba(255,255,255,.10) 0 4deg,rgba(0,0,0,.17) 4deg 8deg);
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.35),inset 0 2px 5px rgba(0,0,0,.5),inset 0 -1px 2px rgba(255,255,255,.25)}
+.stick.on{border-color:rgba(255,61,129,.7);
+  box-shadow:inset 0 2px 5px rgba(255,255,255,.15),inset 0 -4px 10px rgba(0,0,0,.75),0 0 22px rgba(255,61,129,.35)}
+.stick.on .knob{box-shadow:0 4px 12px rgba(0,0,0,.75),inset 0 2px 3px rgba(255,255,255,.5),inset 0 -3px 6px rgba(0,0,0,.55),0 0 14px rgba(255,61,129,.45)}
 .cars{display:flex;gap:8px;overflow-x:auto;padding:2px 0 6px;scrollbar-width:none}
 .cars::-webkit-scrollbar{display:none}
 .carSel{flex:0 0 auto;padding:9px 11px;background:#15132a;border:1px solid #34304f;border-radius:4px;
@@ -115,7 +135,51 @@ summary{cursor:pointer;color:var(--muted);font-size:15px}
   .tb{width:74px;height:74px;font-size:26px}
   .tb.wide{width:82px;height:82px;font-size:13px;padding:6px}
   .grp{gap:8px}
+  .stick{width:100px;height:100px}
+  .knob{width:52px;height:52px;margin:-26px 0 0 -26px}
+  .stick::after{bottom:4px;font-size:9px}
   #bBomb{width:76px;height:76px;bottom:calc(130px + env(safe-area-inset-bottom,0px))}
+}
+/* celular en horizontal: todo más compacto para que la pista se vea entera */
+@media (orientation:landscape) and (max-height:520px){
+  #menu{padding:8px calc(16px + env(safe-area-inset-left,0px)) 8px calc(16px + env(safe-area-inset-right,0px))}
+  /* el menú en dos columnas: entra entero, sin scrollear */
+  .card{display:flex;flex-wrap:wrap;align-content:flex-start;column-gap:14px;width:min(700px,100%)}
+  .hero{flex:1 1 100%;padding:0 0 6px}
+  .sub,.stripe{display:none}
+  h1{font-size:28px}
+  .kanji{font-size:74px;top:-14px;right:0}
+  .field{flex:1 1 44%;margin-top:6px}
+  .field:has(#cars){flex:1 1 100%}
+  label{font-size:12px;margin-bottom:3px}
+  input[type=text],input[type=password],input[type=tel]{padding:8px 11px;font-size:15px}
+  #pin{font-size:20px}
+  .sw{width:26px;height:26px}
+  .swatches{gap:8px}
+  .carSel{padding:5px 9px;font-size:12px}
+  #msg{flex:1 1 100%;min-height:0;margin-top:4px;font-size:13px}
+  #joinBtn{flex:1 1 100%;margin-top:2px}
+  .btn{padding:9px 14px;font-size:15px}
+  .row{flex:1 1 100%;margin-top:6px}
+  #adminBox{flex:1 1 100%;margin-top:4px;padding-top:6px}
+  summary{font-size:13px}
+  details .panel{margin-top:6px;padding:8px}
+  #touch{padding:6px calc(10px + env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) calc(10px + env(safe-area-inset-left,0px))}
+  .stick{width:92px;height:92px}
+  .knob{width:48px;height:48px;margin:-24px 0 0 -24px}
+  .tb{width:84px;height:84px;font-size:27px}
+  .tb.wide{width:90px;height:90px;font-size:13px;padding:6px}
+  #bBomb{width:68px;height:68px;font-size:26px;bottom:calc(110px + env(safe-area-inset-bottom,0px))}
+  #bombN{min-width:20px;height:20px;font-size:11px}
+  .tl,.tr{padding:6px 10px}
+  #lap{font-size:16px}
+  #pos{font-size:13px}
+  #spd{font-size:22px}
+  #bar{top:calc(66px + env(safe-area-inset-top,0px));width:min(520px,calc(100% - 220px));padding:8px}
+  #room{font-size:16px}
+  #banner{font-size:clamp(46px,13vw,92px)}
+  #results{padding:12px}
+  #toast{top:calc(70px + env(safe-area-inset-top,0px));font-size:13px}
 }
 </style>
 </head>
@@ -197,7 +261,7 @@ summary{cursor:pointer;color:var(--muted);font-size:15px}
 </div>
 
 <div id="touch" hidden>
-  <div class="grp"><button class="tb" id="bL" aria-label="Izquierda">◀</button><button class="tb" id="bR" aria-label="Derecha">▶</button></div>
+  <div class="grp"><div class="stick" id="stick" aria-label="Palanca de dirección"><div class="knob" id="knob"><span></span></div></div></div>
   <div class="grp"><button class="tb wide" id="bB">Freno y drift</button><button class="tb wide" id="bG">Gas</button></div>
 </div>
 
@@ -616,7 +680,9 @@ function nearest(x,y,from){
   return bi;
 }
 function input(){
-  return {left:kb.left||tc.left,right:kb.right||tc.right,gas:kb.gas||tc.gas,brake:kb.brake||tc.brake};
+  /* la palanca manda cuando está tomada; si no, el teclado */
+  const ax=stickAxis()||((kb.right?1:0)-(kb.left?1:0));
+  return {axis:ax,gas:kb.gas||tc.gas,brake:kb.brake||tc.brake};
 }
 const LIM=TW/2+14;
 function update(dt){
@@ -625,11 +691,11 @@ function update(dt){
   if(S.cd>0) S.cd=Math.max(0,S.cd-dt);
   const rem=g.state==='race'?g.startAt-now:1e9;
   const can=g.state==='race'&&rem<=0&&!S.fin;
-  const inp=can?input():{left:0,right:0,gas:0,brake:0};
+  const inp=can?input():{axis:0,gas:0,brake:0};
   const c=S.car;
   let fx=Math.cos(c.a),fy=Math.sin(c.a);
   let vf=c.vx*fx+c.vy*fy;
-  const steer=(inp.right?1:0)-(inp.left?1:0);
+  const steer=inp.axis;
   const spd=Math.abs(vf);
   c.a+=steer*T.steer*Math.min(1,spd/140)*(vf>=0?1:-1)*(1-Math.min(.35,spd/1400))*dt;
   fx=Math.cos(c.a);fy=Math.sin(c.a);
@@ -759,6 +825,9 @@ function resize(){
   W=innerWidth;H=innerHeight;cv.width=W*DPR;cv.height=H*DPR;
 }
 addEventListener('resize',resize);resize();
+/* al girar el celular el tamaño tarda en reportarse: reintentamos */
+addEventListener('orientationchange',()=>{resize();setTimeout(resize,250);setTimeout(resize,600);});
+if(window.visualViewport){visualViewport.addEventListener('resize',resize);visualViewport.addEventListener('scroll',resize);}
 
 function drawRoad(){
   ctx.lineJoin='round';ctx.lineCap='butt';ctx.setLineDash([]);
@@ -926,17 +995,69 @@ function hud(){
 const KEYS={ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right',ArrowUp:'gas',KeyW:'gas',ArrowDown:'brake',KeyS:'brake',Space:'brake'};
 addEventListener('keydown',e=>{if(e.code==='KeyE'&&S.mode==='play'){throwBomb();e.preventDefault();return;}const k=KEYS[e.code];if(k&&S.mode==='play'){kb[k]=1;e.preventDefault();}});
 addEventListener('keyup',e=>{const k=KEYS[e.code];if(k){kb[k]=0;}});
-addEventListener('blur',()=>{for(const k in kb)kb[k]=0;for(const k in tc)tc[k]=0;});
+addEventListener('blur',()=>{for(const k in kb)kb[k]=0;for(const k in tc)tc[k]=0;stickReset();});
+/* palanca analógica: el desplazamiento del knob da el giro, con retorno elástico */
+let stickAxis=()=>0, stickReset=()=>{};
+(function(){
+  const base=$('stick'), knob=$('knob');
+  let pid=null, R=40, cx=0, cy=0, ax=0;
+  function place(dx,dy){
+    knob.style.transform='translate('+dx.toFixed(1)+'px,'+dy.toFixed(1)+'px)';
+    ax=Math.max(-1,Math.min(1,dx/R));
+    if(Math.abs(ax)<.08) ax=0;      /* zona muerta: el auto no vibra centrado */
+  }
+  function move(e){
+    if(pid===null||e.pointerId!==pid) return;
+    let dx=e.clientX-cx, dy=e.clientY-cy;
+    const d=Math.hypot(dx,dy);
+    if(d>R){dx=dx/d*R;dy=dy/d*R;}   /* tope circular, como una palanca real */
+    place(dx,dy);
+  }
+  function reset(){
+    pid=null;ax=0;base.classList.remove('on');knob.classList.add('snap');
+    knob.style.transform='translate(0px,0px)';
+    setTimeout(()=>knob.classList.remove('snap'),200);
+  }
+  base.addEventListener('pointerdown',e=>{
+    e.preventDefault();try{base.setPointerCapture(e.pointerId);}catch(_){}
+    const r=base.getBoundingClientRect();
+    cx=r.left+r.width/2;cy=r.top+r.height/2;
+    R=Math.max(20,r.width/2-30);    /* el knob no se escapa del aro */
+    pid=e.pointerId;base.classList.add('on');knob.classList.remove('snap');
+    move(e);
+    try{if(navigator.vibrate)navigator.vibrate(8);}catch(_){}
+  });
+  base.addEventListener('pointermove',move);
+  ['pointerup','pointercancel','lostpointercapture'].forEach(t=>
+    base.addEventListener(t,e=>{if(e.pointerId===pid)reset();}));
+  base.addEventListener('contextmenu',e=>e.preventDefault());
+  stickAxis=()=>ax;stickReset=reset;
+})();
 function bind(id,key){
   const el=$(id);
   el.addEventListener('pointerdown',e=>{e.preventDefault();try{el.setPointerCapture(e.pointerId);}catch(_){}tc[key]=1;el.classList.add('on');});
   ['pointerup','pointercancel','lostpointercapture'].forEach(t=>el.addEventListener(t,()=>{tc[key]=0;el.classList.remove('on');}));
   el.addEventListener('contextmenu',e=>e.preventDefault());
 }
-bind('bL','left');bind('bR','right');bind('bG','gas');bind('bB','brake');
+bind('bG','gas');bind('bB','brake');
 $('bBomb').addEventListener('pointerdown',e=>{e.preventDefault();throwBomb();});
 $('bBomb').addEventListener('contextmenu',e=>e.preventDefault());
 $('tracks').addEventListener('click',e=>{const b=e.target.closest('.trk');if(b)setTrack(+b.dataset.i);});
+
+/* ================= que no se active el zoom ================= */
+/* iOS ignora user-scalable=no: hay que bloquear los gestos a mano */
+['gesturestart','gesturechange','gestureend'].forEach(t=>
+  document.addEventListener(t,e=>{e.preventDefault();},{passive:false}));
+document.addEventListener('dblclick',e=>e.preventDefault());
+document.addEventListener('contextmenu',e=>e.preventDefault());
+/* doble toque rápido sobre la pista (no sobre un botón) tampoco hace zoom */
+let lastTap=0;
+document.addEventListener('touchend',e=>{
+  const now=e.timeStamp||performance.now();
+  const hit=e.target&&e.target.closest?e.target.closest('button,input,.stick,.tb,.carSel,.trk,summary'):null;
+  if(!hit&&now-lastTap<340&&e.cancelable) e.preventDefault();
+  lastTap=now;
+},{passive:false});
 
 /* ================= bucle ================= */
 let last=performance.now();
