@@ -342,7 +342,7 @@ function onHostData(id,conn,m){
     renderRoster();
   }else if(m.t==='s'){
     const o=players.get(id); if(!o) return;
-    o.x=num(m.x,null);o.y=num(m.y);o.a=num(m.a);o.l=num(m.l);o.p=num(m.p);o.f=m.f?1:0;o.t=num(m.t);o.seen=Date.now();
+    o.x=num(m.x,null);o.y=num(m.y);o.a=num(m.a);o.l=num(m.l);o.p=num(m.p);o.f=m.f?1:0;o.t=num(m.ft);o.seen=Date.now();
   }
 }
 function dropPlayer(id){
@@ -399,7 +399,7 @@ function joinRoom(pin){
         conn.send({t:'hello',n:S.name,c:S.color});
         timers.push(setInterval(()=>{
           const c=S.car;
-          try{conn.send({t:'s',x:Math.round(c.x),y:Math.round(c.y),a:+c.a.toFixed(2),l:S.lap,p:S.prog,f:S.fin?1:0,t:+S.ft.toFixed(2)});}catch(e){}
+          try{conn.send({t:'s',x:Math.round(c.x),y:Math.round(c.y),a:+c.a.toFixed(2),l:S.lap,p:S.prog,f:S.fin?1:0,ft:+S.ft.toFixed(2)});}catch(e){}
         },50));
         conn.on('close',()=>{ if(S.mode==='play') leave('La sala se cerró.'); else stop('No se pudo entrar a la sala.'); });
         enterUI();
@@ -560,6 +560,7 @@ function fmt(t){const m=Math.floor(t/60),s=t-m*60;return m+':'+(s<10?'0':'')+s.t
 function renderRoster(){
   const box=$('roster');box.textContent='';
   const all=[{n:S.name,c:S.color,me:true}].concat(others().map(o=>({n:o.n,c:o.c})));
+  if(S.mode==='play') $('room').textContent=(S.practice?'Práctica en solitario':'Sala '+S.pin)+' · '+all.length+'/'+MAX_PLAYERS;
   for(const e of all){
     const s=document.createElement('span');s.className='chip';
     const i=document.createElement('i');i.style.background=e.c;
